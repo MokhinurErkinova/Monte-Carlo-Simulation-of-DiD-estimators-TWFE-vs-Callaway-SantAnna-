@@ -31,6 +31,37 @@ did_simulation/
 
 ### Code Organization
 
+#### Core Files
+
+- **`main.py`**: Master orchestrator that defines all simulation scenarios and runs them sequentially. Contains scenario configurations as a list of dictionaries specifying DGP parameters, sample sizes, and number of replications. Outputs results to CSV.
+
+- **`runner.py`**: Monte Carlo simulation engine. Contains `SimulationRunner` class that:
+  - Takes a DGP and estimator as inputs
+  - Runs `n_sim` replications with different random seeds
+  - Computes summary statistics (mean, bias, SD, RMSE)
+  - Returns `SimulationResult` dataclass with all metrics
+
+- **`protocols.py`**: Interface definitions using Python protocols. Defines:
+  - `DGPProtocol`: Interface for data generating processes (requires `sample()` method and `true_att` property)
+  - `EstimatorProtocol`: Interface for estimators (requires `fit()` method and `estimate` property)
+
+#### Data Generating Processes (`dgps/`)
+
+- **`dgps/deterministic_dgp.py`**: Stage 0 unit test DGP. No noise, no unit fixed effects. Both estimators must recover exact treatment effect.
+
+- **`dgps/static_dgp.py`**: Stage 1 baseline DGP. Standard two-group design with homogeneous treatment effects. Single treatment timing.
+
+- **`dgps/heterogeneous_dgp.py`**: Stage 2 DGP. Multiple treatment groups with different effect sizes, but all treated at same time. Tests whether heterogeneity alone causes bias (it doesn't).
+
+- **`dgps/staggered_dgp.py`**: Stage 3A DGP. The core DGP for demonstrating TWFE breakdown. Features:
+  - Early and late treatment cohorts
+  - Configurable effect heterogeneity across cohorts
+  - Optional dynamic effects (`tau_early_growth` parameter)
+  - Computes true ATT accounting for cohort sizes and timing
+
+- **`dgps/selection_dgp.py`**: Stage 3B DGP. Units select into treatment timing based on their individual treatment effect. Tests forbidden comparisons without negative weights.
+
+#### Estimators (`estimators/`)
 
 - **`estimators/twfe.py`**: Contains `TWFEEstimator` class with:
   - Point estimation via double-demeaning
@@ -231,4 +262,3 @@ Results are saved to `results/simulation_results.csv` with columns:
 - Callaway, B., & Sant'Anna, P. H. (2021). Difference-in-differences with multiple time periods. *Journal of Econometrics*, 225(2), 200-230.
 - Goodman-Bacon, A. (2021). Difference-in-differences with variation in treatment timing. *Journal of Econometrics*, 225(2), 254-277.
 - de Chaisemartin, C., & D'Haultfœuille, X. (2020). Two-way fixed effects estimators with heterogeneous treatment effects. *American Economic Review*, 110(9), 2964-2996.
-
